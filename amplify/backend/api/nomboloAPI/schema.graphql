@@ -1,0 +1,332 @@
+type User @model {
+  id: ID!
+  oldUserPoolId: ID
+  name: String
+  bio: String
+  avatar: S3Object
+  avatarThumbnail: S3Object
+  avatarUpdatedAt: String
+  userName: String
+  pushKey: String
+  aboutMe: String
+  website: String
+  email: String
+  phone: String
+  address: String
+  age: Float
+  locale: String
+  zoneinfo: String
+  birthdate: AWSDateTime
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+  posts: [Media] @connection(name: "UsersPosts", keyField: "mediaOwnerId")
+  asks: [Mission] @connection(name: "UsersAsks", keyField: "missionOwnerId")
+  comments: [Comment] @connection(name: "UsersComments", keyField: "commentOwnerId")
+  fulfilledAsks: [Mission] @connection(name: "UsersFulfilledAsks", keyField: "missionClaimerId")
+  notifications: [Notification]
+  sentNotifications: [NewNotification] @connection(name: "UsersSentNotifications", keyField: "fromUserId")
+}
+
+type Media
+@model
+@key(
+name: "byActive"
+fields: ["visibility", "createdAt"],
+queryField: "listPostsByActive"){
+  id: ID!
+  initialQuery: String
+  mediaOwnerId: String!
+  mediaOwnerUsername: String!
+  mediaCreator: String
+  latitude: Float!
+  longitude: Float!
+  visibility: Visibility
+  title: String
+  address: String
+  region: String
+  categories: [String!]
+  interests: String
+  description: String
+  type: String
+  file: S3Object
+  thumbnail: S3Object
+  potatoThumbnail: S3Object
+  mediaOwnerAvatar: S3Object
+  viewCount: Float
+  likeCount: Float
+  visibleCommentCount: Float
+  likes: [Like] @connection(name: "MediaLikes")
+  flags: [Flag] @connection(name: "MediaFlags")
+  user: User @connection(name: "UsersPosts", keyField: "mediaOwnerId")
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+  fromMission: Boolean
+  comments: [Comment] @connection(name: "MediaComments", keyField: "mediaId")
+  likedBy: [String!]
+  flagged: Boolean
+  flaggedBy: [String]
+  flagDescription: [String]
+  hdUri: String
+  sdUri: String
+  isLocationPrivacyModeEnabled: Boolean
+}
+
+type Mission @model @key(
+name: "byActive"
+fields: ["visibility", "createdAt"],
+queryField: "listAsksByActive")
+@key(
+name: "byVisibility"
+fields: ["visibility"],
+queryField: "listActiveAsks"){
+  id: ID!
+  address: String
+  title: String
+  categories: [String!]
+  initialQuery: String
+  visibility: Visibility
+  latitude: Float!
+  longitude: Float!
+  missionOwnerUsername: String!
+  missionOwnerId: String!
+  missionClaimerUsername: String
+  missionClaimerId: String
+  status: String!
+  onMission: Boolean
+  description: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+  experienceId: String
+  likeCount: Float
+  visibleCommentCount: Float
+  likes: [Like] @connection(name: "MissionLikes")
+  flags: [Flag] @connection(name: "MissionFlags")
+  user: User @connection(name: "UsersAsks", keyField: "missionOwnerId")
+  fulfiller: User @connection(name: "UsersFulfilledAsks", keyField: "missionClaimerId")
+  comments: [Comment] @connection(name: "MissionComments", keyField: "missionId")
+  likedBy: [String!]
+  flagged: Boolean
+  flaggedBy: [String]
+  flagDescription: [String]
+}
+
+type Comment @model {
+  id: ID!
+  mediaId: ID
+  missionId: ID
+  userId: ID
+  commentOwnerId: String
+  user: User @connection(name: "UsersComments", keyField: "commentOwnerId")
+  media: Media
+    @connection(
+      sortField: "createdAt"
+      name: "MediaComments"
+      keyField: "mediaId"
+    )
+  mission: Mission
+    @connection(
+      sortField: "createdAt"
+      name: "MissionComments"
+      keyField: "missionId"
+    )
+  message: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+  createdBy: String
+  deviceId: ID
+  likedBy: [String!]
+  flagged: Boolean
+  flaggedBy: [String!]
+  flagDescription: [String]
+  visibility: Visibility
+}
+
+type Test @model @aws_api_key {
+  id: ID!
+  testString: String
+  testBool: Boolean
+}
+
+type ModelCommentConnection {
+  items: [Comment]
+  nextToken: String
+}
+
+type Query {
+  listCommentsByMediaId(mediaId: ID!): ModelCommentConnection
+  listCommentsByMissionId(MissionId: ID!): ModelCommentConnection
+  getTest2(id: ID!): Test @aws_api_key
+}
+
+type Subscription {
+  onCreateCommentByMediaId(mediaId: ID!): Comment
+		@aws_subscribe(mutations: ["createComment"])
+	onUpdateCommentByMediaId(mediaId: ID!): Comment
+		@aws_subscribe(mutations: ["updateComment"])
+  onCreateCommentByMissionId(missionId: ID!): Comment
+		@aws_subscribe(mutations: ["createComment"])
+  onUpdateCommentByMissionId(missionId: ID!): Comment
+    @aws_subscribe(mutations: ["updateComment"])
+  onCreateMediaByMediaOwnerId(mediaOwnerId: ID!): Media
+    @aws_subscribe(mutations: ["createMedia"])
+  onUpdateMediaByMediaOwnerId(mediaOwnerId: ID!): Media
+		@aws_subscribe(mutations: ["updateMedia"])
+  onCreateNewNotificationByOwnerId(notificationOwnerId: String!): NewNotification
+		@aws_subscribe(mutations: ["createNewNotification"])
+	onUpdateNewNotificationByOwnerId(notificationOwnerId: String!): NewNotification
+		@aws_subscribe(mutations: ["updateNewNotification"])
+	onDeleteNewNotificationByOwnerId(notificationOwnerId: String!): NewNotification
+		@aws_subscribe(mutations: ["deleteNewNotification"])
+  onUpdateUserByUserId(id: ID!): User
+    @aws_subscribe(mutations: ["updateUser"])
+}
+
+type Like @model {
+  id: ID!
+  likeOwnerId: String!
+  likeOwnerUsername: String!
+  media: Media @connection(name: "MediaLikes")
+  mission: Mission @connection(name: "MissionLikes")
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+type Flag @model {
+  id: ID!
+  flagOwnerId: String!
+  flagOwnerUsername: String!
+  media: Media @connection(name: "MediaFlags")
+  mission: Mission @connection(name: "MissionFlags")
+  flaggedBy: [String]
+  flagDescription: [String]
+  flaggedMediaUri: String
+  description: String
+  flagCount: Float
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+type S3Object {
+  bucket: String!
+  region: String!
+  key: String!
+  uri: String!
+}
+
+enum Visibility {
+  public
+  private
+}
+
+type Notification {
+  title: String!
+  body: String!
+  origin: String!
+  data: NotificationData
+  remote: Boolean
+  hasCategory: Boolean
+  viewed: Boolean
+  categories: [NotificationCategory]
+  android: AndroidOptions
+  ios: IosOptions
+  visibility: Visibility
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+type NotificationData {
+  id: ID
+  initialQuery: String
+  mediaOwnerId: String
+  mediaOwnerUsername: String
+  mediaCreator: String
+  missionOwnerUsername: String
+  missionOwnerId: String
+  missionClaimerUsername: String
+  missionClaimerId: String
+  fromUserName: String
+  fromUserId: String
+  status: String
+  onMission: Boolean
+  latitude: Float
+  longitude: Float
+  visibility: Visibility
+  title: String
+  address: String
+  categories: [String]
+  interests: String
+  description: String
+  type: String
+  file: S3Object
+  thumbnail: S3Object
+  mediaOwnerAvatar: S3Object
+  viewCount: Float
+  likeCount: Float
+  likes: [Like]
+  flags: [Flag]
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+  fromMission: Boolean
+  comments: [Comment]
+  likedBy: [String]
+  flagged: Boolean
+  flaggedBy: [String]
+  flagDescription: [String]
+  hdUri: String
+  sdUri: String
+}
+
+type NotificationCategory {
+  name: String
+  actions: [CategoryActions]
+  previewPlaceholder: String
+}
+
+type CategoryActions {
+  actionId: ID
+  buttonTitle: String
+  textInput: CategoryTextInput
+  isDestructive: Boolean
+  isAuthenticationRequired: Boolean
+  doNotOpenInForeground: Boolean
+}
+
+type CategoryTextInput {
+  submitButtonTitle: String
+  placeholder: String
+}
+
+type AndroidOptions {
+  channelId: String
+  icon: S3Object
+  color: String
+  sticky: Boolean
+  link: String
+}
+
+type IosOptions {
+  sound: Boolean
+  _displayInForeground: Boolean
+}
+
+type NewNotification @model
+  @key(name: "notificationsByOwnerId", fields: ["notificationOwnerId"], queryField: "notificationsByOwnerId") {
+    id: ID!
+    body: String
+    fromUserId: String
+    fromUserUsername: String
+    fromUser: User @connection(name: "UsersSentNotifications", keyField: "fromUserId")
+    notificationOwnerId: String!
+    notificationItemId: String
+    type: NotificationType
+    viewed: Boolean
+    visibility: Visibility
+    createdAt: AWSDateTime
+    updatedAt: AWSDateTime
+  }
+
+enum NotificationType {
+  comment
+  answeredAsk
+  nearbyAsk
+}

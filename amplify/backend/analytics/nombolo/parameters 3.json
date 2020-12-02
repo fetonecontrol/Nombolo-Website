@@ -1,0 +1,20 @@
+{
+    "appName": "nombolo",
+    "roleName": "pinpointLambdaRole96cb536c",
+    "cloudWatchPolicyName": "cloudWatchPolicy96cb536c",
+    "pinpointPolicyName": "pinpointPolicy96cb536c",
+    "authPolicyName": "pinpoint_amplify_96cb536c",
+    "unauthPolicyName": "pinpoint_amplify_96cb536c",
+    "authRoleName": {
+        "Ref": "AuthRoleName"
+    },
+    "unauthRoleName": {
+        "Ref": "UnauthRoleName"
+    },
+    "authRoleArn": {
+        "Fn::GetAtt": [
+            "AuthRole",
+            "Arn"
+        ]
+    }
+}
